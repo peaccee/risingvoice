@@ -1095,34 +1095,65 @@ let syncConfig = {...DEFAULT_SYNC_CONFIG};
   }
 
   async function syncNow(showFeedback){
-    if(!syncConfig.enabled || !syncConfig.url){
-      if(showFeedback) showToast('請先設定並啟用雲端同步');
-      return;
+
+  if(!syncConfig.enabled || !syncConfig.url){
+
+    if(showFeedback){
+      showToast('請先設定並啟用雲端同步');
     }
-    updateSheetSyncStatus('同步中…');
-    const remote = await pullFromSheet();
-    if(remote) mergeRemoteIntoLocal(remote);
-    await saveData();
-    renderAll();
-    if(showFeedback) showToast('雲端同步完成');
+
+    return;
   }
 
-  document.getElementById('saveSyncBtn').addEventListener('click', async ()=>{
-    const url = document.getElementById('sheetUrl').value.trim();
-    const token = document.getElementById('sheetToken').value.trim();
-    if(!url){ showToast('請填入 Web App 網址'); return; }
-    syncConfig = { enabled:true, url, token };
-    saveSyncConfig();
-    showToast('雲端同步設定已儲存並啟用');
-    await syncNow(true);
-  });
-  document.getElementById('syncNowBtn').addEventListener('click', ()=> syncNow(true));
-  document.getElementById('disableSyncBtn').addEventListener('click', ()=>{
-    syncConfig.enabled = false;
-    saveSyncConfig();
-    updateSheetSyncStatus();
-    showToast('已停用雲端同步（資料仍保留在本機）');
-  });
+
+  updateSheetSyncStatus('同步中…');
+
+
+  const remote = await pullFromSheet();
+
+
+  if(remote){
+
+    // Google Sheet 作為主要資料來源
+    data.categories =
+      remote.categories || [];
+
+    data.budgets =
+      remote.budgets || {};
+
+    data.entries =
+      remote.entries || [];
+
+
+    // 更新本機快取
+    if(HAS_LOCAL_STORAGE){
+
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify(data)
+      );
+
+    }
+
+
+    updateSheetSyncStatus(
+      '已從 Google Sheets 同步'
+    );
+
+
+  }
+
+
+  renderAll();
+
+
+  if(showFeedback){
+
+    showToast('雲端同步完成');
+
+  }
+
+}
 
   /* ---------------- Backup export / import ---------------- */
   function exportBackup(){
