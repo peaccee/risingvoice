@@ -62,6 +62,23 @@
     color:var(--text-muted);
     margin-top:6px;
   }
+  .sync-status{
+    display:inline-flex; align-items:center; gap:6px;
+    margin-top:12px; font-size:12px; color:var(--green-deep);
+    background:var(--green-mist); border:1px solid var(--green-soft);
+    padding:5px 12px; border-radius:20px;
+  }
+  .sync-dot{
+    width:6px; height:6px; border-radius:50%; background:var(--green);
+    box-shadow:0 0 0 0 rgba(76,122,86,.5);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse{
+    0%{ box-shadow:0 0 0 0 rgba(76,122,86,.4); }
+    70%{ box-shadow:0 0 0 5px rgba(76,122,86,0); }
+    100%{ box-shadow:0 0 0 0 rgba(76,122,86,0); }
+  }
+  @media (prefers-reduced-motion: reduce){ .sync-dot{ animation:none; } }
 
   /* ---------- Card ---------- */
   .card{
@@ -230,6 +247,91 @@
     <div class="header">
       <h1 class="brand-title">日昕樂藝 收支專案統計表</h1>
       <div class="brand-sub">PROJECT FINANCE OVERVIEW</div>
+      <div class="sync-status" id="syncStatus">
+        <span class="sync-dot"></span>
+        <span id="syncStatusText">資料自動儲存中…</span>
+      </div>
+    </div>
+
+    <!-- 資料備份與還原 -->
+    <div class="card">
+      <h2><span class="idx">同步</span>資料備份與還原</h2>
+      <p class="card-desc">資料儲存在「這台裝置的這個瀏覽器」內。若要在不同裝置間保留同一份資料，可使用下方「雲端同步」自動同步，或手動匯出／匯入備份檔（匯入不會覆蓋既有資料，會自動合併）。</p>
+      <div class="form-actions" style="justify-content:flex-start;">
+        <button class="btn btn-primary" id="exportBackupBtn">匯出備份檔（JSON）</button>
+        <button class="btn btn-ghost" id="importBackupBtn">匯入備份檔（JSON）</button>
+        <input type="file" id="importBackupInput" accept="application/json,.json" style="display:none;">
+      </div>
+    </div>
+
+    <!-- 雲端同步（Google Sheets） -->
+    <div class="card">
+      <h2><span class="idx">雲端</span>雲端同步（Google Sheets）</h2>
+      <p class="card-desc">用 Google 試算表當免費資料庫，不同裝置打開都會自動同步。需要先在 Google 端設定一次「Apps Script」，步驟請見下方說明。</p>
+
+      <div class="grid">
+        <div class="field">
+          <label>Web App 網址</label>
+          <input type="text" id="sheetUrl" placeholder="https://script.google.com/macros/s/xxxx/exec">
+        </div>
+        <div class="field">
+          <label>存取密碼（Token，需與 Apps Script 內設定一致）</label>
+          <input type="text" id="sheetToken" placeholder="例如：nichshin2026">
+        </div>
+      </div>
+      <div class="form-actions" style="justify-content:flex-start;">
+        <button class="btn btn-primary" id="saveSyncBtn">儲存設定並啟用</button>
+        <button class="btn btn-ghost" id="syncNowBtn">立即同步</button>
+        <button class="btn btn-ghost" id="disableSyncBtn">停用雲端同步</button>
+      </div>
+      <div class="amount-preview" style="margin-top:14px;">
+        <span>同步狀態</span>
+        <span class="val" id="sheetSyncStatusText" style="font-size:14px;">尚未設定</span>
+      </div>
+
+      <details style="margin-top:16px;">
+        <summary style="cursor:pointer; font-size:13px; color:var(--green-deep);">查看 Google 端設定步驟與程式碼</summary>
+        <div style="margin-top:12px; font-size:13px; color:var(--text); line-height:1.9;">
+          <ol style="padding-left:20px; margin:0 0 12px;">
+            <li>到 Google Sheets 建立一個新的空白試算表（例如命名為「日昕樂藝資料庫」）。</li>
+            <li>上方選單點「擴充功能」→「Apps Script」，會開啟一個新分頁的程式碼編輯器。</li>
+            <li>把編輯器裡原本的內容全部刪除，貼上下方的程式碼；並把 <code>CHANGE_ME</code> 改成你自訂的密碼（跟上面「存取密碼」欄位要一致）。</li>
+            <li>點右上角「部署」→「新增部署作業」，類型選「網頁應用程式」；「執行身分」選你自己，「誰可以存取」選「任何人」，然後點「部署」。</li>
+            <li>第一次部署會要求你授權，照畫面指示允許即可（顯示「未經驗證」時點「進階」→「前往...（不安全）」是正常的，因為這是你自己寫的腳本）。</li>
+            <li>部署完成後會給你一個網址，結尾是 <code>/exec</code>，把它貼到上方「Web App 網址」欄位。</li>
+            <li>回到這個頁面，填好網址與密碼，點「儲存設定並啟用」即可。之後在別台裝置打開這個頁面、填入同一組網址密碼，資料就會自動同步。</li>
+          </ol>
+          <textarea readonly style="width:100%; min-height:220px; font-family:monospace; font-size:12px; padding:10px;" onclick="this.select()">var TOKEN = 'CHANGE_ME'; // 自訂密碼，需與頁面上的設定一致
+
+function doGet(e) {
+  if (TOKEN && e.parameter.token !== TOKEN) {
+    return ContentService.createTextOutput(JSON.stringify({error:'unauthorized'})).setMimeType(ContentService.MimeType.JSON);
+  }
+  var sheet = getDataSheet();
+  var json = sheet.getRange('A1').getValue();
+  if (!json) json = '{"categories":[],"budgets":{},"entries":[]}';
+  return ContentService.createTextOutput(json).setMimeType(ContentService.MimeType.JSON);
+}
+
+function doPost(e) {
+  var body = JSON.parse(e.postData.contents);
+  if (TOKEN && body.token !== TOKEN) {
+    return ContentService.createTextOutput(JSON.stringify({error:'unauthorized'})).setMimeType(ContentService.MimeType.JSON);
+  }
+  var sheet = getDataSheet();
+  sheet.getRange('A1').setValue(JSON.stringify(body.data));
+  return ContentService.createTextOutput(JSON.stringify({ok:true})).setMimeType(ContentService.MimeType.JSON);
+}
+
+function getDataSheet(){
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName('Data');
+  if (!sheet) sheet = ss.insertSheet('Data');
+  return sheet;
+}</textarea>
+          <p style="color:var(--text-muted); margin-top:8px;">提醒：「任何人」可存取代表只要知道網址與密碼就能讀寫資料，適合小型專案內部使用；請不要把網址和密碼公開分享給不相關的人。</p>
+        </div>
+      </details>
     </div>
 
     <!-- 主控板 -->
@@ -418,25 +520,68 @@
     setTimeout(()=>t.classList.remove('show'), 2200);
   }
 
+  const HAS_CLAUDE_STORAGE = (typeof window.storage !== 'undefined' && window.storage && typeof window.storage.get === 'function');
+
+  function localStorageAvailable(){
+    try{
+      const k = '__test__';
+      localStorage.setItem(k, '1');
+      localStorage.removeItem(k);
+      return true;
+    }catch(e){ return false; }
+  }
+  const HAS_LOCAL_STORAGE = localStorageAvailable();
+
+  function setSyncStatus(text, isError){
+    const el = document.getElementById('syncStatusText');
+    const dot = document.querySelector('.sync-dot');
+    if(el) el.textContent = text;
+    if(dot) dot.style.background = isError ? 'var(--danger)' : 'var(--green)';
+  }
+
   async function loadData(){
     try{
-      const res = await window.storage.get(STORAGE_KEY, false);
-      if(res && res.value){
-        const parsed = JSON.parse(res.value);
+      let raw = null;
+      if(HAS_CLAUDE_STORAGE){
+        const res = await window.storage.get(STORAGE_KEY, false);
+        raw = res && res.value ? res.value : null;
+      }else if(HAS_LOCAL_STORAGE){
+        raw = localStorage.getItem(STORAGE_KEY);
+      }
+      if(raw){
+        const parsed = JSON.parse(raw);
         data.categories = parsed.categories && parsed.categories.length ? parsed.categories : DEFAULT_CATEGORIES.slice();
         data.budgets = parsed.budgets || { '115': 2325000 };
         data.entries = parsed.entries || [];
+        setSyncStatus(`已載入 ${data.entries.length} 筆歷史資料`, false);
+      }else{
+        setSyncStatus('尚無歷史資料，開始新增第一筆吧', false);
       }
     }catch(e){
-      // 尚無資料，使用預設值
+      setSyncStatus('尚無歷史資料，開始新增第一筆吧', false);
     }
   }
 
   async function saveData(){
     try{
-      await window.storage.set(STORAGE_KEY, JSON.stringify(data), false);
+      setSyncStatus('儲存中…', false);
+      if(HAS_CLAUDE_STORAGE){
+        await window.storage.set(STORAGE_KEY, JSON.stringify(data), false);
+      }else if(HAS_LOCAL_STORAGE){
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      }else{
+        throw new Error('no storage available');
+      }
+      const now = new Date();
+      const hh = String(now.getHours()).padStart(2,'0');
+      const mm = String(now.getMinutes()).padStart(2,'0');
+      setSyncStatus(`已自動儲存（${hh}:${mm}）`, false);
+      if(syncConfig.enabled){
+        pushToSheet();
+      }
     }catch(e){
       console.error('儲存失敗', e);
+      setSyncStatus('資料儲存失敗，請重新整理後再試', true);
       showToast('資料儲存失敗，請稍後再試');
     }
   }
@@ -840,6 +985,189 @@
     });
   }
 
+  /* ---------------- Google Sheets cloud sync ---------------- */
+  const SYNC_CONFIG_KEY = 'nichshin-sync-config';
+  let syncConfig = { enabled:false, url:'', token:'' };
+
+  function loadSyncConfig(){
+    try{
+      const raw = localStorage.getItem(SYNC_CONFIG_KEY);
+      if(raw) syncConfig = JSON.parse(raw);
+    }catch(e){ /* 無設定或無 localStorage，維持預設 */ }
+    document.getElementById('sheetUrl').value = syncConfig.url || '';
+    document.getElementById('sheetToken').value = syncConfig.token || '';
+    updateSheetSyncStatus();
+  }
+  function saveSyncConfig(){
+    try{ localStorage.setItem(SYNC_CONFIG_KEY, JSON.stringify(syncConfig)); }catch(e){ /* 略過 */ }
+  }
+  function updateSheetSyncStatus(text){
+    const el = document.getElementById('sheetSyncStatusText');
+    if(!el) return;
+    if(text){ el.textContent = text; return; }
+    el.textContent = syncConfig.enabled ? '已啟用，將自動與 Google Sheets 同步' : '尚未設定';
+  }
+
+  async function pullFromSheet(){
+    if(!syncConfig.enabled || !syncConfig.url) return null;
+    try{
+      const sep = syncConfig.url.includes('?') ? '&' : '?';
+      const url = syncConfig.url + sep + 'token=' + encodeURIComponent(syncConfig.token || '');
+      const res = await fetch(url, { method:'GET' });
+      const json = await res.json();
+      if(json && json.error) throw new Error(json.error);
+      return json;
+    }catch(e){
+      console.error('雲端讀取失敗', e);
+      updateSheetSyncStatus('雲端讀取失敗，請確認網址／密碼是否正確');
+      return null;
+    }
+  }
+
+  async function pushToSheet(){
+    if(!syncConfig.enabled || !syncConfig.url) return false;
+    try{
+      const res = await fetch(syncConfig.url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({
+          token: syncConfig.token || '',
+          data: { categories: data.categories, budgets: data.budgets, entries: data.entries }
+        })
+      });
+      const json = await res.json();
+      if(json && json.error) throw new Error(json.error);
+      const now = new Date();
+      updateSheetSyncStatus(`已同步至 Google Sheets（${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}）`);
+      return true;
+    }catch(e){
+      console.error('雲端寫入失敗', e);
+      updateSheetSyncStatus('雲端寫入失敗，請確認網址／密碼是否正確');
+      return false;
+    }
+  }
+
+  function mergeRemoteIntoLocal(remote){
+    if(!remote) return;
+    const catSet = new Set(data.categories);
+    (remote.categories || []).forEach(c => catSet.add(c));
+    data.categories = Array.from(catSet);
+
+    data.budgets = { ...(remote.budgets || {}), ...data.budgets };
+
+    const entryMap = new Map();
+    (remote.entries || []).forEach(e => { if(e && e.id) entryMap.set(e.id, e); });
+    data.entries.forEach(e => entryMap.set(e.id, e));
+    data.entries = Array.from(entryMap.values());
+  }
+
+  async function syncNow(showFeedback){
+    if(!syncConfig.enabled || !syncConfig.url){
+      if(showFeedback) showToast('請先設定並啟用雲端同步');
+      return;
+    }
+    updateSheetSyncStatus('同步中…');
+    const remote = await pullFromSheet();
+    if(remote) mergeRemoteIntoLocal(remote);
+    await saveData();
+    renderAll();
+    if(showFeedback) showToast('雲端同步完成');
+  }
+
+  document.getElementById('saveSyncBtn').addEventListener('click', async ()=>{
+    const url = document.getElementById('sheetUrl').value.trim();
+    const token = document.getElementById('sheetToken').value.trim();
+    if(!url){ showToast('請填入 Web App 網址'); return; }
+    syncConfig = { enabled:true, url, token };
+    saveSyncConfig();
+    showToast('雲端同步設定已儲存並啟用');
+    await syncNow(true);
+  });
+  document.getElementById('syncNowBtn').addEventListener('click', ()=> syncNow(true));
+  document.getElementById('disableSyncBtn').addEventListener('click', ()=>{
+    syncConfig.enabled = false;
+    saveSyncConfig();
+    updateSheetSyncStatus();
+    showToast('已停用雲端同步（資料仍保留在本機）');
+  });
+
+  /* ---------------- Backup export / import ---------------- */
+  function exportBackup(){
+    const payload = {
+      app: 'nichshin-project-data',
+      exportedAt: new Date().toISOString(),
+      categories: data.categories,
+      budgets: data.budgets,
+      entries: data.entries
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const now = new Date();
+    const stamp = now.getFullYear() + String(now.getMonth()+1).padStart(2,'0') + String(now.getDate()).padStart(2,'0')
+      + '_' + String(now.getHours()).padStart(2,'0') + String(now.getMinutes()).padStart(2,'0');
+    a.href = url;
+    a.download = `日昕樂藝備份_${stamp}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast('已匯出備份檔');
+  }
+
+  function importBackupFile(file){
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+      let imported;
+      try{
+        imported = JSON.parse(evt.target.result);
+      }catch(e){
+        showToast('備份檔格式錯誤，無法讀取');
+        return;
+      }
+      if(!imported || !Array.isArray(imported.entries)){
+        showToast('這不是有效的備份檔');
+        return;
+      }
+      const importCount = imported.entries.length;
+      const ok = window.confirm(
+        `即將匯入備份檔（共 ${importCount} 筆資料）。\n` +
+        `匯入方式為「合併」：新資料會加入，相同編號的資料會以匯入檔內容為準更新，不會刪除其他既有資料。\n\n` +
+        `確定要匯入嗎？`
+      );
+      if(!ok) return;
+
+      // 合併類別
+      const catSet = new Set(data.categories);
+      (imported.categories || []).forEach(c => catSet.add(c));
+      data.categories = Array.from(catSet);
+
+      // 合併預算（匯入檔覆蓋相同年度）
+      data.budgets = { ...data.budgets, ...(imported.budgets || {}) };
+
+      // 合併逐筆資料（依 id 去重，匯入檔覆蓋相同 id）
+      const entryMap = new Map();
+      data.entries.forEach(e => entryMap.set(e.id, e));
+      imported.entries.forEach(e => { if(e && e.id) entryMap.set(e.id, e); });
+      data.entries = Array.from(entryMap.values());
+
+      await saveData();
+      renderAll();
+      showToast(`已合併匯入，目前共 ${data.entries.length} 筆資料`);
+    };
+    reader.readAsText(file);
+  }
+
+  document.getElementById('exportBackupBtn').addEventListener('click', exportBackup);
+  document.getElementById('importBackupBtn').addEventListener('click', ()=>{
+    document.getElementById('importBackupInput').click();
+  });
+  document.getElementById('importBackupInput').addEventListener('change', (e)=>{
+    const file = e.target.files && e.target.files[0];
+    if(file) importBackupFile(file);
+    e.target.value = '';
+  });
+
   /* ---------------- Export to Excel ---------------- */
   function exportToExcel(){
     if(typeof XLSX === 'undefined'){
@@ -926,8 +1254,12 @@
   async function init(){
     document.getElementById('expDate').value = todayStr();
     document.getElementById('incDate').value = todayStr();
+    loadSyncConfig();
     await loadData();
     renderAll();
+    if(syncConfig.enabled){
+      syncNow(false);
+    }
   }
 
   init();
