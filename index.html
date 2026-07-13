@@ -11,7 +11,7 @@
     --border: #E1D8C0;
     --text: #3B372D;
     --text-muted: #948C74;
-    --green: #4C7A56;
+    --green: #4C7A56;document.getElementById('expDate').value = todayStr()
     --green-deep: #33553B;
     --green-soft: #DEE9D8;
     --green-mist: #F0F5EC;
@@ -1315,14 +1315,31 @@ let syncConfig = {...DEFAULT_SYNC_CONFIG};
     renderList();
   }
 
-  async function init(){
-    document.getElementById('expDate').value = todayStr();
-    document.getElementById('incDate').value = todayStr();
+async function init(){
+
+    document.getElementById('expDate').value =
+      todayStr();
+
+    document.getElementById('incDate').value =
+      todayStr();
+
+
     loadSyncConfig();
+
+
     await loadData();
-    renderAll();
+
+
     if(syncConfig.enabled){
-      syncNow(false);
+
+      await syncNow(false);
+
+    }
+
+
+    renderAll();
+
+}
     }
   }
 
