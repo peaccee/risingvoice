@@ -50,7 +50,7 @@
   .brandmark{ width:210px; height:64px; margin-bottom:6px; }
   .brand-title{
     font-family:'Noto Serif TC', serif;
-    font-weight:300;
+    font-weight:700;
     font-size:28px;
     letter-spacing:.12em;
     color:var(--green-deep);
@@ -74,7 +74,7 @@
   }
   .card h2{
     font-family:'Noto Serif TC', serif;
-    font-weight:400;
+    font-weight:700;
     font-size:17px;
     letter-spacing:.06em;
     color:var(--green-deep);
@@ -136,7 +136,7 @@
     display:flex; justify-content:space-between; align-items:center;
     font-size:13.5px; color:var(--green-deep);
   }
-  .amount-preview .val{ font-family:'Noto Serif TC',serif; font-size:20px; font-weight:400; }
+  .amount-preview .val{ font-family:'Noto Serif TC',serif; font-size:20px; font-weight:700; }
 
   .confirm-panel{
     margin-top:16px; padding:18px; border-radius:10px;
@@ -144,7 +144,7 @@
   }
   .confirm-panel.exp{ background:var(--green-mist); border-color:var(--green-soft); }
   .confirm-panel .row{ display:flex; justify-content:space-between; font-size:13.5px; margin-bottom:6px; color:var(--text); }
-  .confirm-panel .row.total{ font-family:'Noto Serif TC',serif; font-size:19px; color:var(--green-deep); margin-top:10px; padding-top:10px; border-top:1px solid rgba(0,0,0,.08); }
+  .confirm-panel .row.total{ font-family:'Noto Serif TC',serif; font-weight:700; font-size:19px; color:var(--green-deep); margin-top:10px; padding-top:10px; border-top:1px solid rgba(0,0,0,.08); }
   .confirm-actions{ display:flex; gap:10px; margin-top:14px; justify-content:flex-end; }
 
   .form-actions{ display:flex; gap:10px; margin-top:18px; justify-content:flex-end; }
@@ -159,7 +159,7 @@
   .stat-box.income{ background:var(--income-soft); border-color:#E9DAB8; }
   .stat-box.remain{ background:var(--bg-soft); border-color:var(--border); }
   .stat-box .label{ font-size:12px; color:var(--text-muted); letter-spacing:.05em; }
-  .stat-box .value{ font-family:'Noto Serif TC',serif; font-size:24px; margin-top:6px; color:var(--green-deep); }
+  .stat-box .value{ font-family:'Noto Serif TC',serif; font-weight:700; font-size:24px; margin-top:6px; color:var(--green-deep); }
   .stat-box.income .value{ color:#8C6620; }
   .stat-box.remain .value{ color:var(--text); }
   .stat-box.remain .value.negative{ color:var(--danger); }
@@ -185,9 +185,9 @@
   .entry-tag{ display:inline-block; font-size:11px; padding:2px 9px; border-radius:20px; margin-bottom:4px; letter-spacing:.03em; }
   .entry-tag.exp{ background:var(--green-soft); color:var(--green-deep); }
   .entry-tag.inc{ background:var(--income-soft); color:#8C6620; }
-  .entry-title{ font-size:14.5px; color:var(--text); font-weight:500; }
+  .entry-title{ font-size:14.5px; color:var(--text); font-weight:600; }
   .entry-sub{ font-size:12.5px; color:var(--text-muted); margin-top:2px; }
-  .entry-amt{ font-family:'Noto Serif TC',serif; font-size:16px; color:var(--green-deep); white-space:nowrap; padding-top:2px; }
+  .entry-amt{ font-family:'Noto Serif TC',serif; font-weight:700; font-size:16px; color:var(--green-deep); white-space:nowrap; padding-top:2px; }
   .entry-amt.inc{ color:#8C6620; }
   .entry-del{ background:none; border:none; color:var(--text-muted); font-size:16px; cursor:pointer; padding:2px 4px; line-height:1; }
   .entry-del:hover{ color:var(--danger); }
@@ -195,7 +195,7 @@
   /* ---------- Budget settings ---------- */
   .budget-list{ display:flex; flex-direction:column; gap:8px; margin-bottom:14px; }
   .budget-item{ display:flex; align-items:center; gap:10px; font-size:13.5px; padding:8px 12px; background:var(--bg-soft); border-radius:8px; }
-  .budget-item .yr{ font-family:'Noto Serif TC',serif; color:var(--green-deep); width:56px; }
+  .budget-item .yr{ font-family:'Noto Serif TC',serif; font-weight:700; color:var(--green-deep); width:56px; }
   .budget-item .amt{ flex:1; color:var(--text); }
   .add-budget-row{ display:flex; gap:8px; align-items:flex-end; }
   .add-budget-row .field{ flex:1; }
@@ -339,7 +339,7 @@
         <div class="stat-box remain"><div class="label">年度經費剩餘</div><div class="value" id="statRemain">NT$ 0</div></div>
       </div>
 
-      <h2 style="font-size:14.5px; margin-bottom:10px;">各類別支出統計</h2>
+      <h2 style="font-size:14.5px; font-weight:700; margin-bottom:10px;">各類別支出統計</h2>
       <div class="cat-bars" id="catBars"></div>
     </div>
 
