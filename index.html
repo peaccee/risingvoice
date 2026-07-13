@@ -997,13 +997,39 @@ const DEFAULT_SYNC_CONFIG = {
 let syncConfig = {...DEFAULT_SYNC_CONFIG};
 
   function loadSyncConfig(){
-    try{
-      const raw = localStorage.getItem(SYNC_CONFIG_KEY);
-      if(raw) syncConfig = JSON.parse(raw);
-    }catch(e){ /* 無設定或無 localStorage，維持預設 */ }
-    document.getElementById('sheetUrl').value = syncConfig.url || '';
-    document.getElementById('sheetToken').value = syncConfig.token || '';
-    updateSheetSyncStatus();
+
+  try{
+
+    const raw = localStorage.getItem(SYNC_CONFIG_KEY);
+
+    if(raw){
+      syncConfig = JSON.parse(raw);
+    }else{
+
+      syncConfig = {...DEFAULT_SYNC_CONFIG};
+
+      localStorage.setItem(
+        SYNC_CONFIG_KEY,
+        JSON.stringify(syncConfig)
+      );
+    }
+
+  }catch(e){
+
+    syncConfig = {...DEFAULT_SYNC_CONFIG};
+
+  }
+
+
+  document.getElementById('sheetUrl').value =
+    syncConfig.url || '';
+
+  document.getElementById('sheetToken').value =
+    syncConfig.token || '';
+
+  updateSheetSyncStatus();
+
+}
   }
   function saveSyncConfig(){
     try{ localStorage.setItem(SYNC_CONFIG_KEY, JSON.stringify(syncConfig)); }catch(e){ /* 略過 */ }
