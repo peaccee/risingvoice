@@ -11,7 +11,7 @@
     --border: #E1D8C0;
     --text: #3B372D;
     --text-muted: #948C74;
-    --green: #4C7A56;document.getElementById('expDate').value = todayStr()
+    --green: #4C7A56;
     --green-deep: #33553B;
     --green-soft: #DEE9D8;
     --green-mist: #F0F5EC;
@@ -986,50 +986,17 @@ function getDataSheet(){
   }
 
   /* ---------------- Google Sheets cloud sync ---------------- */
-const SYNC_CONFIG_KEY = 'nichshin-sync-config';
-
-const DEFAULT_SYNC_CONFIG = {
-  enabled: true,
-  url: 'https://script.google.com/macros/s/AKfycbxDSaGr31AZsTcy_ULKsXx-WIUsFL_K5o9HpzEI5cxQyv6WPuY6JAYs_47RtYyyAbuNiQ/exec',
-  token: 'risingvoice'
-};
-
-let syncConfig = {...DEFAULT_SYNC_CONFIG};
+  const SYNC_CONFIG_KEY = 'nichshin-sync-config';
+  let syncConfig = { enabled:false, url:'', token:'' };
 
   function loadSyncConfig(){
-
-  try{
-
-    const raw = localStorage.getItem(SYNC_CONFIG_KEY);
-
-    if(raw){
-      syncConfig = JSON.parse(raw);
-    }else{
-
-      syncConfig = {...DEFAULT_SYNC_CONFIG};
-
-      localStorage.setItem(
-        SYNC_CONFIG_KEY,
-        JSON.stringify(syncConfig)
-      );
-    }
-
-  }catch(e){
-
-    syncConfig = {...DEFAULT_SYNC_CONFIG};
-
-  }
-
-
-  document.getElementById('sheetUrl').value =
-    syncConfig.url || '';
-
-  document.getElementById('sheetToken').value =
-    syncConfig.token || '';
-
-  updateSheetSyncStatus();
-
-}
+    try{
+      const raw = localStorage.getItem(SYNC_CONFIG_KEY);
+      if(raw) syncConfig = JSON.parse(raw);
+    }catch(e){ /* 無設定或無 localStorage，維持預設 */ }
+    document.getElementById('sheetUrl').value = syncConfig.url || '';
+    document.getElementById('sheetToken').value = syncConfig.token || '';
+    updateSheetSyncStatus();
   }
   function saveSyncConfig(){
     try{ localStorage.setItem(SYNC_CONFIG_KEY, JSON.stringify(syncConfig)); }catch(e){ /* 略過 */ }
@@ -1095,65 +1062,34 @@ let syncConfig = {...DEFAULT_SYNC_CONFIG};
   }
 
   async function syncNow(showFeedback){
-
-  if(!syncConfig.enabled || !syncConfig.url){
-
-    if(showFeedback){
-      showToast('請先設定並啟用雲端同步');
+    if(!syncConfig.enabled || !syncConfig.url){
+      if(showFeedback) showToast('請先設定並啟用雲端同步');
+      return;
     }
-
-    return;
+    updateSheetSyncStatus('同步中…');
+    const remote = await pullFromSheet();
+    if(remote) mergeRemoteIntoLocal(remote);
+    await saveData();
+    renderAll();
+    if(showFeedback) showToast('雲端同步完成');
   }
 
-
-  updateSheetSyncStatus('同步中…');
-
-
-  const remote = await pullFromSheet();
-
-
-  if(remote){
-
-    // Google Sheet 作為主要資料來源
-    data.categories =
-      remote.categories || [];
-
-    data.budgets =
-      remote.budgets || {};
-
-    data.entries =
-      remote.entries || [];
-
-
-    // 更新本機快取
-    if(HAS_LOCAL_STORAGE){
-
-      localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify(data)
-      );
-
-    }
-
-
-    updateSheetSyncStatus(
-      '已從 Google Sheets 同步'
-    );
-
-
-  }
-
-
-  renderAll();
-
-
-  if(showFeedback){
-
-    showToast('雲端同步完成');
-
-  }
-
-}
+  document.getElementById('saveSyncBtn').addEventListener('click', async ()=>{
+    const url = document.getElementById('sheetUrl').value.trim();
+    const token = document.getElementById('sheetToken').value.trim();
+    if(!url){ showToast('請填入 Web App 網址'); return; }
+    syncConfig = { enabled:true, url, token };
+    saveSyncConfig();
+    showToast('雲端同步設定已儲存並啟用');
+    await syncNow(true);
+  });
+  document.getElementById('syncNowBtn').addEventListener('click', ()=> syncNow(true));
+  document.getElementById('disableSyncBtn').addEventListener('click', ()=>{
+    syncConfig.enabled = false;
+    saveSyncConfig();
+    updateSheetSyncStatus();
+    showToast('已停用雲端同步（資料仍保留在本機）');
+  });
 
   /* ---------------- Backup export / import ---------------- */
   function exportBackup(){
@@ -1315,31 +1251,14 @@ let syncConfig = {...DEFAULT_SYNC_CONFIG};
     renderList();
   }
 
-async function init(){
-
-    document.getElementById('expDate').value =
-      todayStr();
-
-    document.getElementById('incDate').value =
-      todayStr();
-
-
+  async function init(){
+    document.getElementById('expDate').value = todayStr();
+    document.getElementById('incDate').value = todayStr();
     loadSyncConfig();
-
-
     await loadData();
-
-
-    if(syncConfig.enabled){
-
-      await syncNow(false);
-
-    }
-
-
     renderAll();
-
-}
+    if(syncConfig.enabled){
+      syncNow(false);
     }
   }
 
