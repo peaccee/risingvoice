@@ -986,8 +986,15 @@ function getDataSheet(){
   }
 
   /* ---------------- Google Sheets cloud sync ---------------- */
-  const SYNC_CONFIG_KEY = 'nichshin-sync-config';
-  let syncConfig = { enabled:false, url:'', token:'' };
+const SYNC_CONFIG_KEY = 'nichshin-sync-config';
+
+const DEFAULT_SYNC_CONFIG = {
+  enabled: true,
+  url: 'https://script.google.com/macros/s/AKfycbxDSaGr31AZsTcy_ULKsXx-WIUsFL_K5o9HpzEI5cxQyv6WPuY6JAYs_47RtYyyAbuNiQ/exec',
+  token: 'risingvoice'
+};
+
+let syncConfig = {...DEFAULT_SYNC_CONFIG};
 
   function loadSyncConfig(){
     try{
