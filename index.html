@@ -109,6 +109,12 @@
   input:focus, select:focus, textarea:focus{ border-color:var(--green); }
   textarea{ resize:vertical; min-height:56px; }
 
+  .edit-banner{
+    display:flex; align-items:center; justify-content:space-between;
+    background:var(--income-soft); border:1px solid #E9DAB8; border-radius:8px;
+    padding:9px 14px; margin-bottom:16px; font-size:13px; color:#8C6620;
+  }
+
   .seg{ display:inline-flex; background:var(--bg-soft); border-radius:10px; padding:3px; gap:2px; margin-bottom:18px; }
   .seg button{
     border:none; background:transparent; padding:8px 20px; border-radius:8px;
@@ -189,6 +195,9 @@
   .entry-sub{ font-size:12.5px; color:var(--text-muted); margin-top:2px; }
   .entry-amt{ font-family:'Noto Serif TC',serif; font-weight:700; font-size:16px; color:var(--green-deep); white-space:nowrap; padding-top:2px; }
   .entry-amt.inc{ color:#8C6620; }
+  .entry-actions{ display:flex; align-items:center; gap:2px; }
+  .entry-edit{ background:none; border:none; color:var(--text-muted); font-size:13px; cursor:pointer; padding:2px 6px; line-height:1; }
+  .entry-edit:hover{ color:var(--green-deep); }
   .entry-del{ background:none; border:none; color:var(--text-muted); font-size:16px; cursor:pointer; padding:2px 4px; line-height:1; }
   .entry-del:hover{ color:var(--danger); }
 
@@ -223,22 +232,22 @@
       <div class="brand-sub">PROJECT FINANCE OVERVIEW</div>
     </div>
 
-    <!-- 專案背景資料 -->
+    <!-- 主控板 -->
     <div class="card">
-      <h2><span class="idx">背景</span>專案背景資料</h2>
-      <p class="card-desc">設定各年度總預算，作為主控板「經費剩餘」計算基準。</p>
-      <div class="budget-list" id="budgetList"></div>
-      <div class="add-budget-row">
-        <div class="field">
-          <label>年度（民國）</label>
-          <input type="text" id="newBudgetYear" placeholder="例如：115">
-        </div>
-        <div class="field">
-          <label>年度總預算</label>
-          <input type="number" id="newBudgetAmount" placeholder="例如：2325000">
-        </div>
-        <button class="btn btn-primary" id="addBudgetBtn">新增／更新</button>
+      <h2><span class="idx">主控板</span>統計資料</h2>
+      <div class="year-select-row">
+        <span class="label">檢視年度（民國）</span>
+        <select id="dashYear"></select>
       </div>
+
+      <div class="stat-grid">
+        <div class="stat-box"><div class="label">年度總支出</div><div class="value" id="statExpense">NT$ 0</div></div>
+        <div class="stat-box income"><div class="label">年度總收入</div><div class="value" id="statIncome">NT$ 0</div></div>
+        <div class="stat-box remain"><div class="label">年度經費剩餘</div><div class="value" id="statRemain">NT$ 0</div></div>
+      </div>
+
+      <h2 style="font-size:14.5px; font-weight:700; margin-bottom:10px;">各類別支出統計</h2>
+      <div class="cat-bars" id="catBars"></div>
     </div>
 
     <!-- 資料輸入 -->
@@ -252,6 +261,10 @@
 
       <!-- 支出表單 -->
       <div id="expenseForm">
+        <div id="expEditBanner" class="edit-banner" style="display:none;">
+          <span>正在編輯這筆支出資料</span>
+          <button class="btn-danger-ghost" id="expCancelEdit">取消編輯</button>
+        </div>
         <div class="grid">
           <div class="field">
             <label>類別</label>
@@ -299,6 +312,10 @@
 
       <!-- 收入表單 -->
       <div id="incomeForm" style="display:none;">
+        <div id="incEditBanner" class="edit-banner" style="display:none;">
+          <span>正在編輯這筆收入資料</span>
+          <button class="btn-danger-ghost" id="incCancelEdit">取消編輯</button>
+        </div>
         <div class="grid">
           <div class="field">
             <label>場次名稱</label>
@@ -325,24 +342,6 @@
       </div>
     </div>
 
-    <!-- 主控板 -->
-    <div class="card">
-      <h2><span class="idx">主控板</span>統計資料</h2>
-      <div class="year-select-row">
-        <span class="label">檢視年度（民國）</span>
-        <select id="dashYear"></select>
-      </div>
-
-      <div class="stat-grid">
-        <div class="stat-box"><div class="label">年度總支出</div><div class="value" id="statExpense">NT$ 0</div></div>
-        <div class="stat-box income"><div class="label">年度總收入</div><div class="value" id="statIncome">NT$ 0</div></div>
-        <div class="stat-box remain"><div class="label">年度經費剩餘</div><div class="value" id="statRemain">NT$ 0</div></div>
-      </div>
-
-      <h2 style="font-size:14.5px; font-weight:700; margin-bottom:10px;">各類別支出統計</h2>
-      <div class="cat-bars" id="catBars"></div>
-    </div>
-
     <!-- 列表 -->
     <div class="card">
       <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
@@ -352,6 +351,24 @@
       <p class="card-desc" style="margin-top:8px;">匯出內容包含支出明細、收入明細與年度統計總覽三個工作表。</p>
       <div class="list-filter" id="listFilter"></div>
       <div id="entryList"></div>
+    </div>
+
+    <!-- 年度總預算 -->
+    <div class="card">
+      <h2><span class="idx">背景</span>年度總預算</h2>
+      <p class="card-desc">設定各年度總預算，作為主控板「經費剩餘」計算基準。</p>
+      <div class="budget-list" id="budgetList"></div>
+      <div class="add-budget-row">
+        <div class="field">
+          <label>年度（民國）</label>
+          <input type="text" id="newBudgetYear" placeholder="例如：115">
+        </div>
+        <div class="field">
+          <label>年度總預算</label>
+          <input type="number" id="newBudgetAmount" placeholder="例如：2325000">
+        </div>
+        <button class="btn btn-primary" id="addBudgetBtn">新增／更新</button>
+      </div>
     </div>
 
   </div>
@@ -371,6 +388,7 @@
   };
 
   let currentType = 'expense';
+  let editingId = null;
   let dashYear = null;
   let listFilterYear = 'all';
 
@@ -445,6 +463,9 @@
   /* ---------------- Segment toggle ---------------- */
   document.getElementById('segExpense').addEventListener('click', ()=>{
     currentType = 'expense';
+    editingId = null;
+    document.getElementById('expEditBanner').style.display = 'none';
+    document.getElementById('incEditBanner').style.display = 'none';
     document.getElementById('segExpense').classList.add('active');
     document.getElementById('segIncome').classList.remove('active');
     document.getElementById('expenseForm').style.display = 'block';
@@ -452,6 +473,9 @@
   });
   document.getElementById('segIncome').addEventListener('click', ()=>{
     currentType = 'income';
+    editingId = null;
+    document.getElementById('expEditBanner').style.display = 'none';
+    document.getElementById('incEditBanner').style.display = 'none';
     document.getElementById('segIncome').classList.add('active');
     document.getElementById('segExpense').classList.remove('active');
     document.getElementById('incomeForm').style.display = 'block';
@@ -480,6 +504,8 @@
     document.getElementById('expCategory').selectedIndex = 0;
     updateExpPreview();
     document.getElementById('expConfirmPanel').innerHTML = '';
+    editingId = null;
+    document.getElementById('expEditBanner').style.display = 'none';
   }
   function resetIncForm(){
     document.getElementById('incSession').value = '';
@@ -487,10 +513,62 @@
     document.getElementById('incFee').value = '';
     document.getElementById('incNote').value = '';
     document.getElementById('incConfirmPanel').innerHTML = '';
+    editingId = null;
+    document.getElementById('incEditBanner').style.display = 'none';
   }
 
   document.getElementById('expResetBtn').addEventListener('click', resetExpForm);
   document.getElementById('incResetBtn').addEventListener('click', resetIncForm);
+  document.getElementById('expCancelEdit').addEventListener('click', resetExpForm);
+  document.getElementById('incCancelEdit').addEventListener('click', resetIncForm);
+
+  /* ---------------- Start editing an entry ---------------- */
+  function startEditEntry(id){
+    const entry = data.entries.find(e=>e.id===id);
+    if(!entry) return;
+
+    if(entry.type === 'expense'){
+      currentType = 'expense';
+      document.getElementById('segExpense').classList.add('active');
+      document.getElementById('segIncome').classList.remove('active');
+      document.getElementById('expenseForm').style.display = 'block';
+      document.getElementById('incomeForm').style.display = 'none';
+
+      if(!data.categories.includes(entry.category)){
+        data.categories.push(entry.category);
+        renderCategoryOptions();
+      }
+      document.getElementById('expCategory').value = entry.category;
+      document.getElementById('newCategoryField').style.display = 'none';
+      document.getElementById('expItem').value = entry.item || '';
+      document.getElementById('expDate').value = entry.date || todayStr();
+      document.getElementById('expQty').value = entry.qty;
+      document.getElementById('expUnit').value = entry.unit || '';
+      document.getElementById('expPrice').value = entry.price;
+      document.getElementById('expNote').value = entry.note || '';
+      updateExpPreview();
+      document.getElementById('expConfirmPanel').innerHTML = '';
+      editingId = id;
+      document.getElementById('expEditBanner').style.display = 'flex';
+      document.getElementById('incEditBanner').style.display = 'none';
+    }else{
+      currentType = 'income';
+      document.getElementById('segIncome').classList.add('active');
+      document.getElementById('segExpense').classList.remove('active');
+      document.getElementById('incomeForm').style.display = 'block';
+      document.getElementById('expenseForm').style.display = 'none';
+
+      document.getElementById('incSession').value = entry.session || '';
+      document.getElementById('incDate').value = entry.date || todayStr();
+      document.getElementById('incFee').value = entry.fee;
+      document.getElementById('incNote').value = entry.note || '';
+      document.getElementById('incConfirmPanel').innerHTML = '';
+      editingId = id;
+      document.getElementById('incEditBanner').style.display = 'flex';
+      document.getElementById('expEditBanner').style.display = 'none';
+    }
+    document.getElementById('expenseForm').closest('.card').scrollIntoView({behavior:'smooth', block:'start'});
+  }
 
   /* ---------------- Expense submit flow ---------------- */
   document.getElementById('expPreviewBtn').addEventListener('click', ()=>{
@@ -513,6 +591,7 @@
 
     const amount = qty * price;
     const panel = document.getElementById('expConfirmPanel');
+    const isEdit = !!editingId;
     panel.innerHTML = `
       <div class="confirm-panel exp">
         <div class="row"><span>類別</span><span>${escapeHtml(category)}</span></div>
@@ -522,7 +601,7 @@
         <div class="row total"><span>本筆金額</span><span>${fmtMoney(amount)}</span></div>
         <div class="confirm-actions">
           <button class="btn btn-ghost" id="expCancelConfirm">返回修改</button>
-          <button class="btn btn-primary" id="expFinalSubmit">確認送出</button>
+          <button class="btn btn-primary" id="expFinalSubmit">${isEdit ? '確認更新' : '確認送出'}</button>
         </div>
       </div>`;
     document.getElementById('expCancelConfirm').addEventListener('click', ()=>{ panel.innerHTML=''; });
@@ -531,13 +610,20 @@
         data.categories.push(category);
         renderCategoryOptions();
       }
-      data.entries.push({
-        id: 'e_'+Date.now()+'_'+Math.random().toString(36).slice(2,7),
-        type:'expense', date, category, item, qty, unit, price, amount, note
-      });
+      if(isEdit){
+        const idx = data.entries.findIndex(e=>e.id===editingId);
+        if(idx > -1){
+          data.entries[idx] = { ...data.entries[idx], date, category, item, qty, unit, price, amount, note };
+        }
+      }else{
+        data.entries.push({
+          id: 'e_'+Date.now()+'_'+Math.random().toString(36).slice(2,7),
+          type:'expense', date, category, item, qty, unit, price, amount, note
+        });
+      }
       await saveData();
       resetExpForm();
-      showToast('支出資料已送出');
+      showToast(isEdit ? '支出資料已更新' : '支出資料已送出');
       renderAll();
     });
   });
@@ -553,6 +639,7 @@
     if(isNaN(fee)){ showToast('請輸入演出費'); return; }
 
     const panel = document.getElementById('incConfirmPanel');
+    const isEdit = !!editingId;
     panel.innerHTML = `
       <div class="confirm-panel">
         <div class="row"><span>場次名稱</span><span>${escapeHtml(session)}</span></div>
@@ -560,18 +647,25 @@
         <div class="row total"><span>演出費</span><span>${fmtMoney(fee)}</span></div>
         <div class="confirm-actions">
           <button class="btn btn-ghost" id="incCancelConfirm">返回修改</button>
-          <button class="btn btn-primary" id="incFinalSubmit">確認送出</button>
+          <button class="btn btn-primary" id="incFinalSubmit">${isEdit ? '確認更新' : '確認送出'}</button>
         </div>
       </div>`;
     document.getElementById('incCancelConfirm').addEventListener('click', ()=>{ panel.innerHTML=''; });
     document.getElementById('incFinalSubmit').addEventListener('click', async ()=>{
-      data.entries.push({
-        id:'i_'+Date.now()+'_'+Math.random().toString(36).slice(2,7),
-        type:'income', date, session, fee, note
-      });
+      if(isEdit){
+        const idx = data.entries.findIndex(e=>e.id===editingId);
+        if(idx > -1){
+          data.entries[idx] = { ...data.entries[idx], date, session, fee, note };
+        }
+      }else{
+        data.entries.push({
+          id:'i_'+Date.now()+'_'+Math.random().toString(36).slice(2,7),
+          type:'income', date, session, fee, note
+        });
+      }
       await saveData();
       resetIncForm();
-      showToast('收入資料已送出');
+      showToast(isEdit ? '收入資料已更新' : '收入資料已送出');
       renderAll();
     });
   });
@@ -707,7 +801,10 @@
             <div class="entry-sub">${e.qty} ${escapeHtml(e.unit||'')} × ${fmtMoney(e.price)}${e.note?'　｜　'+escapeHtml(e.note):''}</div>
           </div>
           <div class="entry-amt">－${fmtMoney(e.amount)}</div>
-          <button class="entry-del" data-id="${e.id}" title="刪除">✕</button>
+          <div class="entry-actions">
+            <button class="entry-edit" data-id="${e.id}" title="編輯">編輯</button>
+            <button class="entry-del" data-id="${e.id}" title="刪除">✕</button>
+          </div>
         </div>`;
       }else{
         return `
@@ -719,10 +816,19 @@
             <div class="entry-sub">${e.note?escapeHtml(e.note):''}</div>
           </div>
           <div class="entry-amt inc">＋${fmtMoney(e.fee)}</div>
-          <button class="entry-del" data-id="${e.id}" title="刪除">✕</button>
+          <div class="entry-actions">
+            <button class="entry-edit" data-id="${e.id}" title="編輯">編輯</button>
+            <button class="entry-del" data-id="${e.id}" title="刪除">✕</button>
+          </div>
         </div>`;
       }
     }).join('');
+
+    el.querySelectorAll('.entry-edit').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        startEditEntry(btn.dataset.id);
+      });
+    });
 
     el.querySelectorAll('.entry-del').forEach(btn=>{
       btn.addEventListener('click', async ()=>{
