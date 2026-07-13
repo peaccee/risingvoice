@@ -1,0 +1,829 @@
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500&family=Noto+Sans+TC:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --bg: #F7F2E7;
+    --bg-card: #FFFEFA;
+    --bg-soft: #EFE9D8;
+    --border: #E1D8C0;
+    --text: #3B372D;
+    --text-muted: #948C74;
+    --green: #4C7A56;
+    --green-deep: #33553B;
+    --green-soft: #DEE9D8;
+    --green-mist: #F0F5EC;
+    --income: #B98A4C;
+    --income-soft: #F3E9D6;
+    --danger: #B0604C;
+    --radius: 14px;
+    --shadow: 0 2px 14px rgba(76, 66, 40, 0.06);
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; background:transparent; }
+  body{
+    font-family:'Noto Sans TC','Noto Sans',sans-serif;
+    font-weight:300;
+    color:var(--text);
+    -webkit-font-smoothing:antialiased;
+    line-height:1.65;
+  }
+  #app{
+    background:var(--bg);
+    min-height:100vh;
+    padding: 28px 18px 64px;
+  }
+  .wrap{ max-width:920px; margin:0 auto; }
+
+  /* ---------- Header / signature ---------- */
+  .header{
+    display:flex; flex-direction:column; align-items:center;
+    text-align:center; margin-bottom:30px;
+    opacity:0; transform:translateY(8px);
+    animation: rise .7s ease forwards;
+  }
+  @keyframes rise{ to{ opacity:1; transform:translateY(0); } }
+  @media (prefers-reduced-motion: reduce){ .header{ animation:none; opacity:1; transform:none; } }
+
+  .brandmark{ width:210px; height:64px; margin-bottom:6px; }
+  .brand-title{
+    font-family:'Noto Serif TC', serif;
+    font-weight:300;
+    font-size:28px;
+    letter-spacing:.12em;
+    color:var(--green-deep);
+    margin:0;
+  }
+  .brand-sub{
+    font-size:12.5px;
+    letter-spacing:.22em;
+    color:var(--text-muted);
+    margin-top:6px;
+  }
+
+  /* ---------- Card ---------- */
+  .card{
+    background:var(--bg-card);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    padding:22px 22px 24px;
+    margin-bottom:22px;
+  }
+  .card h2{
+    font-family:'Noto Serif TC', serif;
+    font-weight:400;
+    font-size:17px;
+    letter-spacing:.06em;
+    color:var(--green-deep);
+    margin:0 0 4px;
+    display:flex; align-items:center; gap:8px;
+  }
+  .card h2 .idx{
+    font-size:11px; color:var(--green); font-family:'Noto Sans TC',sans-serif;
+    border:1px solid var(--green-soft); background:var(--green-mist);
+    padding:2px 8px; border-radius:20px; letter-spacing:.05em;
+  }
+  .card-desc{ font-size:12.5px; color:var(--text-muted); margin:0 0 18px; }
+
+  /* ---------- Form elements ---------- */
+  .grid{ display:grid; grid-template-columns:1fr 1fr; gap:14px 16px; }
+  .grid.full{ grid-template-columns:1fr; }
+  .field{ display:flex; flex-direction:column; gap:6px; }
+  .field.span2{ grid-column: 1 / -1; }
+  label{ font-size:12.5px; color:var(--text-muted); letter-spacing:.03em; }
+  input[type=text], input[type=number], input[type=date], select, textarea{
+    font-family:'Noto Sans TC',sans-serif; font-weight:300;
+    background:#FFFFFF;
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:9px 11px;
+    font-size:14.5px;
+    color:var(--text);
+    outline:none;
+    transition:border-color .15s;
+    width:100%;
+  }
+  input:focus, select:focus, textarea:focus{ border-color:var(--green); }
+  textarea{ resize:vertical; min-height:56px; }
+
+  .seg{ display:inline-flex; background:var(--bg-soft); border-radius:10px; padding:3px; gap:2px; margin-bottom:18px; }
+  .seg button{
+    border:none; background:transparent; padding:8px 20px; border-radius:8px;
+    font-family:'Noto Sans TC',sans-serif; font-weight:500; font-size:13.5px;
+    color:var(--text-muted); cursor:pointer; letter-spacing:.03em;
+    transition:all .15s;
+  }
+  .seg button.active{ background:var(--bg-card); color:var(--green-deep); box-shadow:0 1px 4px rgba(0,0,0,.07); }
+
+  .btn{
+    font-family:'Noto Sans TC',sans-serif; font-weight:500; font-size:13.5px;
+    border:none; border-radius:8px; padding:10px 20px; cursor:pointer;
+    letter-spacing:.03em; transition:opacity .15s, transform .1s;
+  }
+  .btn:active{ transform:scale(.98); }
+  .btn-primary{ background:var(--green); color:#fff; }
+  .btn-primary:hover{ opacity:.9; }
+  .btn-ghost{ background:transparent; color:var(--text-muted); border:1px solid var(--border); }
+  .btn-ghost:hover{ background:var(--bg-soft); }
+  .btn-danger-ghost{ background:transparent; color:var(--danger); border:1px solid #E7D3CB; font-size:12px; padding:6px 12px; }
+
+  .amount-preview{
+    margin-top:16px; padding:14px 16px; border-radius:10px;
+    background:var(--green-mist); border:1px dashed var(--green-soft);
+    display:flex; justify-content:space-between; align-items:center;
+    font-size:13.5px; color:var(--green-deep);
+  }
+  .amount-preview .val{ font-family:'Noto Serif TC',serif; font-size:20px; font-weight:400; }
+
+  .confirm-panel{
+    margin-top:16px; padding:18px; border-radius:10px;
+    background:var(--income-soft); border:1px solid #E9DAB8;
+  }
+  .confirm-panel.exp{ background:var(--green-mist); border-color:var(--green-soft); }
+  .confirm-panel .row{ display:flex; justify-content:space-between; font-size:13.5px; margin-bottom:6px; color:var(--text); }
+  .confirm-panel .row.total{ font-family:'Noto Serif TC',serif; font-size:19px; color:var(--green-deep); margin-top:10px; padding-top:10px; border-top:1px solid rgba(0,0,0,.08); }
+  .confirm-actions{ display:flex; gap:10px; margin-top:14px; justify-content:flex-end; }
+
+  .form-actions{ display:flex; gap:10px; margin-top:18px; justify-content:flex-end; }
+
+  /* ---------- Dashboard ---------- */
+  .year-select-row{ display:flex; align-items:center; gap:10px; margin-bottom:18px; }
+  .year-select-row select{ width:auto; min-width:110px; }
+  .year-select-row .label{ font-size:13px; color:var(--text-muted); }
+
+  .stat-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:20px; }
+  .stat-box{ background:var(--green-mist); border:1px solid var(--green-soft); border-radius:10px; padding:16px; }
+  .stat-box.income{ background:var(--income-soft); border-color:#E9DAB8; }
+  .stat-box.remain{ background:var(--bg-soft); border-color:var(--border); }
+  .stat-box .label{ font-size:12px; color:var(--text-muted); letter-spacing:.05em; }
+  .stat-box .value{ font-family:'Noto Serif TC',serif; font-size:24px; margin-top:6px; color:var(--green-deep); }
+  .stat-box.income .value{ color:#8C6620; }
+  .stat-box.remain .value{ color:var(--text); }
+  .stat-box.remain .value.negative{ color:var(--danger); }
+
+  .cat-bars{ display:flex; flex-direction:column; gap:10px; }
+  .cat-bar-row{ display:grid; grid-template-columns:110px 1fr 90px; align-items:center; gap:10px; font-size:13px; }
+  .cat-bar-track{ background:var(--bg-soft); border-radius:6px; height:10px; overflow:hidden; }
+  .cat-bar-fill{ background:linear-gradient(90deg, var(--green), #7FA985); height:100%; border-radius:6px; transition:width .5s ease; }
+  .cat-bar-amt{ text-align:right; color:var(--text-muted); font-size:12.5px; }
+  .empty-note{ font-size:13px; color:var(--text-muted); padding:10px 0; }
+
+  /* ---------- List ---------- */
+  .list-filter{ display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap; }
+  .chip{ border:1px solid var(--border); background:var(--bg-card); color:var(--text-muted); font-size:12.5px; padding:6px 14px; border-radius:20px; cursor:pointer; }
+  .chip.active{ background:var(--green); color:#fff; border-color:var(--green); }
+
+  .entry-row{
+    display:flex; align-items:flex-start; gap:14px; padding:14px 4px; border-bottom:1px solid var(--border);
+  }
+  .entry-row:last-child{ border-bottom:none; }
+  .entry-date{ width:78px; flex-shrink:0; font-size:12px; color:var(--text-muted); padding-top:2px; }
+  .entry-main{ flex:1; min-width:0; }
+  .entry-tag{ display:inline-block; font-size:11px; padding:2px 9px; border-radius:20px; margin-bottom:4px; letter-spacing:.03em; }
+  .entry-tag.exp{ background:var(--green-soft); color:var(--green-deep); }
+  .entry-tag.inc{ background:var(--income-soft); color:#8C6620; }
+  .entry-title{ font-size:14.5px; color:var(--text); font-weight:500; }
+  .entry-sub{ font-size:12.5px; color:var(--text-muted); margin-top:2px; }
+  .entry-amt{ font-family:'Noto Serif TC',serif; font-size:16px; color:var(--green-deep); white-space:nowrap; padding-top:2px; }
+  .entry-amt.inc{ color:#8C6620; }
+  .entry-del{ background:none; border:none; color:var(--text-muted); font-size:16px; cursor:pointer; padding:2px 4px; line-height:1; }
+  .entry-del:hover{ color:var(--danger); }
+
+  /* ---------- Budget settings ---------- */
+  .budget-list{ display:flex; flex-direction:column; gap:8px; margin-bottom:14px; }
+  .budget-item{ display:flex; align-items:center; gap:10px; font-size:13.5px; padding:8px 12px; background:var(--bg-soft); border-radius:8px; }
+  .budget-item .yr{ font-family:'Noto Serif TC',serif; color:var(--green-deep); width:56px; }
+  .budget-item .amt{ flex:1; color:var(--text); }
+  .add-budget-row{ display:flex; gap:8px; align-items:flex-end; }
+  .add-budget-row .field{ flex:1; }
+
+  .toast{
+    position:fixed; bottom:26px; left:50%; transform:translateX(-50%) translateY(10px);
+    background:var(--green-deep); color:#fff; padding:10px 20px; border-radius:20px;
+    font-size:13px; opacity:0; pointer-events:none; transition:all .25s;
+    z-index:50;
+  }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+
+  @media (max-width:620px){
+    .grid{ grid-template-columns:1fr; }
+    .stat-grid{ grid-template-columns:1fr; }
+    .cat-bar-row{ grid-template-columns:80px 1fr 76px; }
+  }
+</style>
+
+<div id="app">
+  <div class="wrap">
+
+    <div class="header">
+      <h1 class="brand-title">日昕樂藝 收支專案統計表</h1>
+      <div class="brand-sub">PROJECT FINANCE OVERVIEW</div>
+    </div>
+
+    <!-- 專案背景資料 -->
+    <div class="card">
+      <h2><span class="idx">背景</span>專案背景資料</h2>
+      <p class="card-desc">設定各年度總預算，作為主控板「經費剩餘」計算基準。</p>
+      <div class="budget-list" id="budgetList"></div>
+      <div class="add-budget-row">
+        <div class="field">
+          <label>年度（民國）</label>
+          <input type="text" id="newBudgetYear" placeholder="例如：115">
+        </div>
+        <div class="field">
+          <label>年度總預算</label>
+          <input type="number" id="newBudgetAmount" placeholder="例如：2325000">
+        </div>
+        <button class="btn btn-primary" id="addBudgetBtn">新增／更新</button>
+      </div>
+    </div>
+
+    <!-- 資料輸入 -->
+    <div class="card">
+      <h2><span class="idx">輸入</span>資料輸入</h2>
+      <p class="card-desc">切換支出或收入資料，填寫後可預覽金額並確認送出。</p>
+      <div class="seg">
+        <button id="segExpense" class="active">支出資料</button>
+        <button id="segIncome">收入資料</button>
+      </div>
+
+      <!-- 支出表單 -->
+      <div id="expenseForm">
+        <div class="grid">
+          <div class="field">
+            <label>類別</label>
+            <select id="expCategory"></select>
+          </div>
+          <div class="field" id="newCategoryField" style="display:none;">
+            <label>新增類別名稱</label>
+            <input type="text" id="newCategoryInput" placeholder="輸入新類別後將自動加入下拉選單">
+          </div>
+          <div class="field">
+            <label>計畫項目</label>
+            <input type="text" id="expItem" placeholder="例如：北管排練場地租借">
+          </div>
+          <div class="field">
+            <label>日期</label>
+            <input type="date" id="expDate">
+          </div>
+          <div class="field">
+            <label>數量</label>
+            <input type="number" id="expQty" placeholder="0" step="any">
+          </div>
+          <div class="field">
+            <label>單位</label>
+            <input type="text" id="expUnit" placeholder="例如：每人、式、月、趟">
+          </div>
+          <div class="field">
+            <label>單價</label>
+            <input type="number" id="expPrice" placeholder="0" step="any">
+          </div>
+          <div class="field span2">
+            <label>項目說明</label>
+            <textarea id="expNote" placeholder="補充說明（選填）"></textarea>
+          </div>
+        </div>
+        <div class="amount-preview">
+          <span>本筆金額（數量 × 單價）</span>
+          <span class="val" id="expAmountPreview">NT$ 0</span>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-ghost" id="expResetBtn">清空</button>
+          <button class="btn btn-primary" id="expPreviewBtn">確認金額並送出</button>
+        </div>
+        <div id="expConfirmPanel"></div>
+      </div>
+
+      <!-- 收入表單 -->
+      <div id="incomeForm" style="display:none;">
+        <div class="grid">
+          <div class="field">
+            <label>場次名稱</label>
+            <input type="text" id="incSession" placeholder="例如：中秋音樂會・大稻埕場">
+          </div>
+          <div class="field">
+            <label>日期</label>
+            <input type="date" id="incDate">
+          </div>
+          <div class="field">
+            <label>演出費</label>
+            <input type="number" id="incFee" placeholder="0" step="any">
+          </div>
+          <div class="field span2">
+            <label>說明</label>
+            <textarea id="incNote" placeholder="補充說明（選填）"></textarea>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-ghost" id="incResetBtn">清空</button>
+          <button class="btn btn-primary" id="incPreviewBtn">確認金額並送出</button>
+        </div>
+        <div id="incConfirmPanel"></div>
+      </div>
+    </div>
+
+    <!-- 主控板 -->
+    <div class="card">
+      <h2><span class="idx">主控板</span>統計資料</h2>
+      <div class="year-select-row">
+        <span class="label">檢視年度（民國）</span>
+        <select id="dashYear"></select>
+      </div>
+
+      <div class="stat-grid">
+        <div class="stat-box"><div class="label">年度總支出</div><div class="value" id="statExpense">NT$ 0</div></div>
+        <div class="stat-box income"><div class="label">年度總收入</div><div class="value" id="statIncome">NT$ 0</div></div>
+        <div class="stat-box remain"><div class="label">年度經費剩餘</div><div class="value" id="statRemain">NT$ 0</div></div>
+      </div>
+
+      <h2 style="font-size:14.5px; margin-bottom:10px;">各類別支出統計</h2>
+      <div class="cat-bars" id="catBars"></div>
+    </div>
+
+    <!-- 列表 -->
+    <div class="card">
+      <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+        <h2 style="margin-bottom:0;"><span class="idx">列表</span>逐筆資料（依日期新到舊）</h2>
+        <button class="btn btn-ghost" id="exportExcelBtn">匯出 Excel</button>
+      </div>
+      <p class="card-desc" style="margin-top:8px;">匯出內容包含支出明細、收入明細與年度統計總覽三個工作表。</p>
+      <div class="list-filter" id="listFilter"></div>
+      <div id="entryList"></div>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  const DEFAULT_CATEGORIES = ['樂人演出費','排練','樂手交通補助','師資合作','演出雜支','行銷費用','專案人力費用'];
+  const STORAGE_KEY = 'nichshin-project-data';
+
+  let data = {
+    categories: DEFAULT_CATEGORIES.slice(),
+    budgets: { '115': 2325000 },
+    entries: []
+  };
+
+  let currentType = 'expense';
+  let dashYear = null;
+  let listFilterYear = 'all';
+
+  function toRocYear(dateStr){
+    if(!dateStr) return null;
+    const y = parseInt(dateStr.slice(0,4),10);
+    if(isNaN(y)) return null;
+    return String(y - 1911);
+  }
+
+  function fmtMoney(n){
+    n = Math.round(Number(n)||0);
+    return 'NT$ ' + n.toLocaleString('zh-TW');
+  }
+
+  function todayStr(){
+    const d = new Date();
+    const m = String(d.getMonth()+1).padStart(2,'0');
+    const day = String(d.getDate()).padStart(2,'0');
+    return d.getFullYear()+'-'+m+'-'+day;
+  }
+
+  function showToast(msg){
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(()=>t.classList.remove('show'), 2200);
+  }
+
+  async function loadData(){
+    try{
+      const res = await window.storage.get(STORAGE_KEY, false);
+      if(res && res.value){
+        const parsed = JSON.parse(res.value);
+        data.categories = parsed.categories && parsed.categories.length ? parsed.categories : DEFAULT_CATEGORIES.slice();
+        data.budgets = parsed.budgets || { '115': 2325000 };
+        data.entries = parsed.entries || [];
+      }
+    }catch(e){
+      // 尚無資料，使用預設值
+    }
+  }
+
+  async function saveData(){
+    try{
+      await window.storage.set(STORAGE_KEY, JSON.stringify(data), false);
+    }catch(e){
+      console.error('儲存失敗', e);
+      showToast('資料儲存失敗，請稍後再試');
+    }
+  }
+
+  /* ---------------- Category select ---------------- */
+  function renderCategoryOptions(){
+    const sel = document.getElementById('expCategory');
+    sel.innerHTML = '';
+    data.categories.forEach(c=>{
+      const opt = document.createElement('option');
+      opt.value = c; opt.textContent = c;
+      sel.appendChild(opt);
+    });
+    const addOpt = document.createElement('option');
+    addOpt.value = '__manual__';
+    addOpt.textContent = '＋ 手動新增類別';
+    sel.appendChild(addOpt);
+  }
+
+  document.getElementById('expCategory').addEventListener('change', (e)=>{
+    document.getElementById('newCategoryField').style.display = e.target.value === '__manual__' ? 'flex' : 'none';
+  });
+
+  /* ---------------- Segment toggle ---------------- */
+  document.getElementById('segExpense').addEventListener('click', ()=>{
+    currentType = 'expense';
+    document.getElementById('segExpense').classList.add('active');
+    document.getElementById('segIncome').classList.remove('active');
+    document.getElementById('expenseForm').style.display = 'block';
+    document.getElementById('incomeForm').style.display = 'none';
+  });
+  document.getElementById('segIncome').addEventListener('click', ()=>{
+    currentType = 'income';
+    document.getElementById('segIncome').classList.add('active');
+    document.getElementById('segExpense').classList.remove('active');
+    document.getElementById('incomeForm').style.display = 'block';
+    document.getElementById('expenseForm').style.display = 'none';
+  });
+
+  /* ---------------- Expense amount preview ---------------- */
+  function updateExpPreview(){
+    const qty = parseFloat(document.getElementById('expQty').value) || 0;
+    const price = parseFloat(document.getElementById('expPrice').value) || 0;
+    document.getElementById('expAmountPreview').textContent = fmtMoney(qty * price);
+  }
+  ['expQty','expPrice'].forEach(id=>{
+    document.getElementById(id).addEventListener('input', updateExpPreview);
+  });
+
+  function resetExpForm(){
+    document.getElementById('expItem').value = '';
+    document.getElementById('expDate').value = todayStr();
+    document.getElementById('expQty').value = '';
+    document.getElementById('expUnit').value = '';
+    document.getElementById('expPrice').value = '';
+    document.getElementById('expNote').value = '';
+    document.getElementById('newCategoryInput').value = '';
+    document.getElementById('newCategoryField').style.display = 'none';
+    document.getElementById('expCategory').selectedIndex = 0;
+    updateExpPreview();
+    document.getElementById('expConfirmPanel').innerHTML = '';
+  }
+  function resetIncForm(){
+    document.getElementById('incSession').value = '';
+    document.getElementById('incDate').value = todayStr();
+    document.getElementById('incFee').value = '';
+    document.getElementById('incNote').value = '';
+    document.getElementById('incConfirmPanel').innerHTML = '';
+  }
+
+  document.getElementById('expResetBtn').addEventListener('click', resetExpForm);
+  document.getElementById('incResetBtn').addEventListener('click', resetIncForm);
+
+  /* ---------------- Expense submit flow ---------------- */
+  document.getElementById('expPreviewBtn').addEventListener('click', ()=>{
+    const catSel = document.getElementById('expCategory');
+    let category = catSel.value;
+    if(category === '__manual__'){
+      const manual = document.getElementById('newCategoryInput').value.trim();
+      if(!manual){ showToast('請輸入新類別名稱'); return; }
+      category = manual;
+    }
+    const item = document.getElementById('expItem').value.trim();
+    const date = document.getElementById('expDate').value || todayStr();
+    const qty = parseFloat(document.getElementById('expQty').value);
+    const unit = document.getElementById('expUnit').value.trim();
+    const price = parseFloat(document.getElementById('expPrice').value);
+    const note = document.getElementById('expNote').value.trim();
+
+    if(!item){ showToast('請輸入計畫項目'); return; }
+    if(isNaN(qty) || isNaN(price)){ showToast('請輸入數量與單價'); return; }
+
+    const amount = qty * price;
+    const panel = document.getElementById('expConfirmPanel');
+    panel.innerHTML = `
+      <div class="confirm-panel exp">
+        <div class="row"><span>類別</span><span>${escapeHtml(category)}</span></div>
+        <div class="row"><span>計畫項目</span><span>${escapeHtml(item)}</span></div>
+        <div class="row"><span>日期</span><span>${date}</span></div>
+        <div class="row"><span>數量 × 單價</span><span>${qty} ${escapeHtml(unit||'')} × ${fmtMoney(price)}</span></div>
+        <div class="row total"><span>本筆金額</span><span>${fmtMoney(amount)}</span></div>
+        <div class="confirm-actions">
+          <button class="btn btn-ghost" id="expCancelConfirm">返回修改</button>
+          <button class="btn btn-primary" id="expFinalSubmit">確認送出</button>
+        </div>
+      </div>`;
+    document.getElementById('expCancelConfirm').addEventListener('click', ()=>{ panel.innerHTML=''; });
+    document.getElementById('expFinalSubmit').addEventListener('click', async ()=>{
+      if(!data.categories.includes(category)){
+        data.categories.push(category);
+        renderCategoryOptions();
+      }
+      data.entries.push({
+        id: 'e_'+Date.now()+'_'+Math.random().toString(36).slice(2,7),
+        type:'expense', date, category, item, qty, unit, price, amount, note
+      });
+      await saveData();
+      resetExpForm();
+      showToast('支出資料已送出');
+      renderAll();
+    });
+  });
+
+  /* ---------------- Income submit flow ---------------- */
+  document.getElementById('incPreviewBtn').addEventListener('click', ()=>{
+    const session = document.getElementById('incSession').value.trim();
+    const date = document.getElementById('incDate').value || todayStr();
+    const fee = parseFloat(document.getElementById('incFee').value);
+    const note = document.getElementById('incNote').value.trim();
+
+    if(!session){ showToast('請輸入場次名稱'); return; }
+    if(isNaN(fee)){ showToast('請輸入演出費'); return; }
+
+    const panel = document.getElementById('incConfirmPanel');
+    panel.innerHTML = `
+      <div class="confirm-panel">
+        <div class="row"><span>場次名稱</span><span>${escapeHtml(session)}</span></div>
+        <div class="row"><span>日期</span><span>${date}</span></div>
+        <div class="row total"><span>演出費</span><span>${fmtMoney(fee)}</span></div>
+        <div class="confirm-actions">
+          <button class="btn btn-ghost" id="incCancelConfirm">返回修改</button>
+          <button class="btn btn-primary" id="incFinalSubmit">確認送出</button>
+        </div>
+      </div>`;
+    document.getElementById('incCancelConfirm').addEventListener('click', ()=>{ panel.innerHTML=''; });
+    document.getElementById('incFinalSubmit').addEventListener('click', async ()=>{
+      data.entries.push({
+        id:'i_'+Date.now()+'_'+Math.random().toString(36).slice(2,7),
+        type:'income', date, session, fee, note
+      });
+      await saveData();
+      resetIncForm();
+      showToast('收入資料已送出');
+      renderAll();
+    });
+  });
+
+  /* ---------------- Budget settings ---------------- */
+  function renderBudgetList(){
+    const wrap = document.getElementById('budgetList');
+    const years = Object.keys(data.budgets).sort((a,b)=>b-a);
+    if(years.length===0){
+      wrap.innerHTML = '<div class="empty-note">尚未設定年度預算</div>';
+      return;
+    }
+    wrap.innerHTML = years.map(y=>`
+      <div class="budget-item">
+        <span class="yr">${y} 年</span>
+        <span class="amt">總預算 ${fmtMoney(data.budgets[y])}</span>
+        <button class="btn-danger-ghost" data-yr="${y}">刪除</button>
+      </div>`).join('');
+    wrap.querySelectorAll('button[data-yr]').forEach(btn=>{
+      btn.addEventListener('click', async ()=>{
+        delete data.budgets[btn.dataset.yr];
+        await saveData();
+        renderAll();
+      });
+    });
+  }
+
+  document.getElementById('addBudgetBtn').addEventListener('click', async ()=>{
+    const y = document.getElementById('newBudgetYear').value.trim();
+    const amt = parseFloat(document.getElementById('newBudgetAmount').value);
+    if(!y || isNaN(amt)){ showToast('請輸入年度與預算金額'); return; }
+    data.budgets[y] = amt;
+    document.getElementById('newBudgetYear').value = '';
+    document.getElementById('newBudgetAmount').value = '';
+    await saveData();
+    showToast('預算已更新');
+    renderAll();
+  });
+
+  /* ---------------- Dashboard ---------------- */
+  function getAllYears(){
+    const years = new Set();
+    Object.keys(data.budgets).forEach(y=>years.add(y));
+    data.entries.forEach(e=>{ const y = toRocYear(e.date); if(y) years.add(y); });
+    if(years.size===0){
+      const nowY = String(new Date().getFullYear()-1911);
+      years.add(nowY);
+    }
+    return Array.from(years).sort((a,b)=>b-a);
+  }
+
+  function renderDashYearOptions(){
+    const sel = document.getElementById('dashYear');
+    const years = getAllYears();
+    if(!dashYear || !years.includes(dashYear)) dashYear = years[0];
+    sel.innerHTML = years.map(y=>`<option value="${y}" ${y===dashYear?'selected':''}>${y} 年</option>`).join('');
+  }
+  document.getElementById('dashYear').addEventListener('change', (e)=>{
+    dashYear = e.target.value;
+    renderDashboard();
+  });
+
+  function renderDashboard(){
+    const yearExpenses = data.entries.filter(e=>e.type==='expense' && toRocYear(e.date)===dashYear);
+    const yearIncomes = data.entries.filter(e=>e.type==='income' && toRocYear(e.date)===dashYear);
+
+    const totalExpense = yearExpenses.reduce((s,e)=>s+(Number(e.amount)||0),0);
+    const totalIncome = yearIncomes.reduce((s,e)=>s+(Number(e.fee)||0),0);
+    const budget = Number(data.budgets[dashYear]) || 0;
+    const remain = budget - totalExpense;
+
+    document.getElementById('statExpense').textContent = fmtMoney(totalExpense);
+    document.getElementById('statIncome').textContent = fmtMoney(totalIncome);
+    const remainEl = document.getElementById('statRemain');
+    remainEl.textContent = fmtMoney(remain);
+    remainEl.classList.toggle('negative', remain < 0);
+
+    const byCat = {};
+    yearExpenses.forEach(e=>{
+      byCat[e.category] = (byCat[e.category]||0) + (Number(e.amount)||0);
+    });
+    const catBarsEl = document.getElementById('catBars');
+    const catEntries = Object.entries(byCat).sort((a,b)=>b[1]-a[1]);
+    if(catEntries.length===0){
+      catBarsEl.innerHTML = '<div class="empty-note">本年度尚無支出資料</div>';
+    }else{
+      const max = Math.max(...catEntries.map(c=>c[1]));
+      catBarsEl.innerHTML = catEntries.map(([cat,amt])=>`
+        <div class="cat-bar-row">
+          <span>${escapeHtml(cat)}</span>
+          <span class="cat-bar-track"><span class="cat-bar-fill" style="width:${max?Math.round(amt/max*100):0}%"></span></span>
+          <span class="cat-bar-amt">${fmtMoney(amt)}</span>
+        </div>`).join('');
+    }
+  }
+
+  /* ---------------- List ---------------- */
+  function renderListFilter(){
+    const years = getAllYears();
+    const wrap = document.getElementById('listFilter');
+    wrap.innerHTML = ['all', ...years].map(y=>`
+      <button class="chip ${listFilterYear===y?'active':''}" data-y="${y}">${y==='all'?'全部年度':y+' 年'}</button>
+    `).join('');
+    wrap.querySelectorAll('.chip').forEach(chip=>{
+      chip.addEventListener('click', ()=>{
+        listFilterYear = chip.dataset.y;
+        renderList();
+        renderListFilter();
+      });
+    });
+  }
+
+  function renderList(){
+    let list = data.entries.slice();
+    if(listFilterYear !== 'all'){
+      list = list.filter(e=>toRocYear(e.date)===listFilterYear);
+    }
+    list.sort((a,b)=> (b.date||'').localeCompare(a.date||'') || (b.id||'').localeCompare(a.id||''));
+
+    const el = document.getElementById('entryList');
+    if(list.length===0){
+      el.innerHTML = '<div class="empty-note">尚無資料</div>';
+      return;
+    }
+    el.innerHTML = list.map(e=>{
+      if(e.type==='expense'){
+        return `
+        <div class="entry-row">
+          <div class="entry-date">${e.date}</div>
+          <div class="entry-main">
+            <span class="entry-tag exp">支出・${escapeHtml(e.category)}</span>
+            <div class="entry-title">${escapeHtml(e.item)}</div>
+            <div class="entry-sub">${e.qty} ${escapeHtml(e.unit||'')} × ${fmtMoney(e.price)}${e.note?'　｜　'+escapeHtml(e.note):''}</div>
+          </div>
+          <div class="entry-amt">－${fmtMoney(e.amount)}</div>
+          <button class="entry-del" data-id="${e.id}" title="刪除">✕</button>
+        </div>`;
+      }else{
+        return `
+        <div class="entry-row">
+          <div class="entry-date">${e.date}</div>
+          <div class="entry-main">
+            <span class="entry-tag inc">收入</span>
+            <div class="entry-title">${escapeHtml(e.session)}</div>
+            <div class="entry-sub">${e.note?escapeHtml(e.note):''}</div>
+          </div>
+          <div class="entry-amt inc">＋${fmtMoney(e.fee)}</div>
+          <button class="entry-del" data-id="${e.id}" title="刪除">✕</button>
+        </div>`;
+      }
+    }).join('');
+
+    el.querySelectorAll('.entry-del').forEach(btn=>{
+      btn.addEventListener('click', async ()=>{
+        data.entries = data.entries.filter(e=>e.id!==btn.dataset.id);
+        await saveData();
+        showToast('已刪除該筆資料');
+        renderAll();
+      });
+    });
+  }
+
+  /* ---------------- Export to Excel ---------------- */
+  function exportToExcel(){
+    if(typeof XLSX === 'undefined'){
+      showToast('Excel 匯出元件載入失敗，請檢查網路後重新整理');
+      return;
+    }
+    const expenseRows = data.entries
+      .filter(e=>e.type==='expense')
+      .sort((a,b)=>(a.date||'').localeCompare(b.date||''))
+      .map(e=>({
+        '年度(民國)': toRocYear(e.date) || '',
+        '日期': e.date,
+        '類別': e.category,
+        '計畫項目': e.item,
+        '數量': e.qty,
+        '單位': e.unit,
+        '單價': e.price,
+        '金額': e.amount,
+        '項目說明': e.note || ''
+      }));
+    const incomeRows = data.entries
+      .filter(e=>e.type==='income')
+      .sort((a,b)=>(a.date||'').localeCompare(b.date||''))
+      .map(e=>({
+        '年度(民國)': toRocYear(e.date) || '',
+        '日期': e.date,
+        '場次名稱': e.session,
+        '演出費': e.fee,
+        '說明': e.note || ''
+      }));
+
+    const years = getAllYears();
+    const summaryRows = years.map(y=>{
+      const yExp = data.entries.filter(e=>e.type==='expense' && toRocYear(e.date)===y);
+      const yInc = data.entries.filter(e=>e.type==='income' && toRocYear(e.date)===y);
+      const totalExp = yExp.reduce((s,e)=>s+(Number(e.amount)||0),0);
+      const totalInc = yInc.reduce((s,e)=>s+(Number(e.fee)||0),0);
+      const budget = Number(data.budgets[y]) || 0;
+      return {
+        '年度(民國)': y,
+        '年度總預算': budget,
+        '年度總支出': totalExp,
+        '年度總收入': totalInc,
+        '經費剩餘': budget - totalExp
+      };
+    });
+
+    const catRows = [];
+    years.forEach(y=>{
+      const yExp = data.entries.filter(e=>e.type==='expense' && toRocYear(e.date)===y);
+      const byCat = {};
+      yExp.forEach(e=>{ byCat[e.category] = (byCat[e.category]||0) + (Number(e.amount)||0); });
+      Object.entries(byCat).sort((a,b)=>b[1]-a[1]).forEach(([cat,amt])=>{
+        catRows.push({ '年度(民國)': y, '類別': cat, '支出金額': amt });
+      });
+    });
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(expenseRows), '支出明細');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(incomeRows), '收入明細');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(summaryRows), '年度統計總覽');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(catRows), '各類別支出明細');
+
+    const stamp = todayStr().replace(/-/g,'');
+    XLSX.writeFile(wb, `日昕樂藝收支專案統計表_${stamp}.xlsx`);
+    showToast('已匯出 Excel 檔案');
+  }
+  document.getElementById('exportExcelBtn').addEventListener('click', exportToExcel);
+
+  function escapeHtml(str){
+    if(str===undefined || str===null) return '';
+    return String(str).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  }
+
+  function renderAll(){
+    renderCategoryOptions();
+    renderBudgetList();
+    renderDashYearOptions();
+    renderDashboard();
+    renderListFilter();
+    renderList();
+  }
+
+  async function init(){
+    document.getElementById('expDate').value = todayStr();
+    document.getElementById('incDate').value = todayStr();
+    await loadData();
+    renderAll();
+  }
+
+  init();
+})();
+</script>
